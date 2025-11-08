@@ -1,7 +1,8 @@
 package com.project.accountapi.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
@@ -11,12 +12,15 @@ import lombok.NoArgsConstructor;
 
 // --- Request DTOs ---
 
-@Getter
+@Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class RegisterRequest {
     // 요구사항: 회원가입시 계정정보(id,email,password) 입력
+    @NotBlank
     private String username;
+    @NotBlank
     private String password;
+    @NotBlank
+    @Email
     private String email;
 }
