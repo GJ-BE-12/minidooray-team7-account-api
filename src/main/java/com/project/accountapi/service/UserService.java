@@ -31,7 +31,8 @@ public class UserService {
         }
 
         User newUser = User.builder()
-                .username(request.getUserId())
+                .userId(request.getUserId())
+                .username(request.getUsername())
                 .password(request.getPassword())
                 .email(request.getEmail())
                 .status(UserStatus.REGISTERED)
