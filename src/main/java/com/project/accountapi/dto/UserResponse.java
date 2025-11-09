@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UserResponse {
     // Gateway가 사용자 프로필 정보를 조합하는 데 사용할 응답
-    private Long userId;
+    private String userId;
     private String username;
     private String email;
     private String status;

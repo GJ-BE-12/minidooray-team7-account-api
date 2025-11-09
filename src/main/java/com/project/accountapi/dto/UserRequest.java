@@ -7,8 +7,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginRequest {
+public class UserRequest {
     // 요구사항: ID/PW 인증
-    private String username;
-    private String password;
+    private String userId;
 }

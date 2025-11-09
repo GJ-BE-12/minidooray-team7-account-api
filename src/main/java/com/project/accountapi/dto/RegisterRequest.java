@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RegisterRequest {
-    // 요구사항: 회원가입시 계정정보(id,email,password) 입력
+    private String userId;
     private String username;
     private String password;
     private String email;
