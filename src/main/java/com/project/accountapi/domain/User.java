@@ -13,12 +13,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "USER") // 'USER'는 MySQL 예약어일 수 있으므로 'USER_ACCOUNT' 사용
+@Table(name = "USER_ACCOUNT") // 'USER'는 MySQL 예약어일 수 있으므로 'USER_ACCOUNT' 사용
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long userId; // DDL의 user_id (PK)에 해당
+    private String userId; // DDL의 user_id (PK)에 해당
 
     @Column(nullable = false, unique = true, length = 50)
     private String username; // DDL의 user_name (UNIQUE)

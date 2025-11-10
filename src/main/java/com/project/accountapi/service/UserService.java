@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Account-Api의 핵심 비즈니스 로직을 처리하는 서비스.
@@ -32,7 +33,7 @@ public class UserService {
 
      */
     @Transactional
-    public Long registerUser(String username, String password, String email) {
+    public String registerUser(String username, String password, String email) {
         // ID 중복 체크
         if (userRepository.existsByUsername(username)) {
             throw new IllegalArgumentException("이미 존재하는 사용자 ID입니다.");
@@ -46,6 +47,7 @@ public class UserService {
         String encodedPassword = passwordEncoder.encode(password);
 
         User newUser = User.builder()
+                .userId(UUID.randomUUID().toString())
                 .username(username)
                 .password(encodedPassword)
                 .email(email)
@@ -100,7 +102,7 @@ public class UserService {
     /**
      * 4. 회원 정보 조회 (Gateway/Task-Api에서 참조)
      */
-    public User findUserById(Long userId) {
+    public User findUserById(String userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new NoSuchElementException("해당 ID의 사용자를 찾을 수 없습니다."));
     }
@@ -109,7 +111,7 @@ public class UserService {
      * 5. 회원 상태 변경 (휴면/탈퇴)
      */
     @Transactional
-    public void updateUserStatus(Long userId, UserStatus newStatus) {
+    public void updateUserStatus(String userId, UserStatus newStatus) {
         User user = findUserById(userId);
         user.updateStatus(newStatus);
         // userRepository.save(user); // @Transactional 덕분에 자동 저장됨

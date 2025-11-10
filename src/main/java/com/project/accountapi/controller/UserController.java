@@ -28,9 +28,9 @@ public class UserController {
     // --- 1. 회원 가입 API ---
     // (RestApi) 회원의 상태(가입,탈퇴,휴면)를 관리(cud)합니다. -> C (Create)
     @PostMapping("/register")
-    public ResponseEntity<Long> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
         try {
-            Long userId = userService.registerUser(
+            String userId = userService.registerUser(
                     request.getUsername(),
                     request.getPassword(),
                     request.getEmail()
@@ -72,7 +72,7 @@ public class UserController {
     // --- 4. 회원 정보 조회 API (Gateway/Task-Api에서 사용자 정보 조합 시 사용) ---
     // (RestApi)회원 정보를 제공합니다.
     @GetMapping("/{userId}")
-    public ResponseEntity<UserResponse> getUserProfile(@PathVariable Long userId) {
+    public ResponseEntity<UserResponse> getUserProfile(@PathVariable String userId) {
         try {
             User user = userService.findUserById(userId);
             return ResponseEntity.ok(UserResponse.from(user));
@@ -84,7 +84,7 @@ public class UserController {
     // --- 5. 회원 상태 변경 API (휴면/탈퇴) ---
     // (RestApi)회원의 상태(가입,탈퇴,휴면)를 관리(cud)합니다. -> U (Update)
     @PatchMapping("/{userId}/status")
-    public ResponseEntity<Void> updateStatus(@PathVariable Long userId,
+    public ResponseEntity<Void> updateStatus(@PathVariable String userId,
                                              @RequestBody UpdateStatusRequest request) {
         try {
             UserStatus newStatus = UserStatus.valueOf(request.getNewStatus().toUpperCase());

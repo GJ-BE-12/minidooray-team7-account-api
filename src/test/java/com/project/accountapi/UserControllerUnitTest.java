@@ -7,7 +7,6 @@ import com.project.accountapi.domain.UserStatus;
 import com.project.accountapi.dto.LoginRequest;
 import com.project.accountapi.dto.RegisterRequest;
 import com.project.accountapi.dto.UpdateStatusRequest;
-import com.project.accountapi.dto.UserResponse;
 import com.project.accountapi.service.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @WebMvcTest를 사용하여 Controller 레이어만 테스트하며, UserService는 Mocking합니다.
  */
 @WebMvcTest(UserController.class)
-public class UserControllerTest {
+public class UserControllerUnitTest {
 
     @Autowired
     private MockMvc mockMvc; // HTTP 요청 시뮬레이션 도구
@@ -47,7 +46,7 @@ public class UserControllerTest {
 
     private final String BASE_URL = "/users";
 
-    private User getMockUser(Long userId) {
+    private User getMockUser(String userId) {
         return User.builder()
                 .userId(userId)
                 .username("testuser")
@@ -64,7 +63,7 @@ public class UserControllerTest {
     void register_Success() throws Exception {
         // Given
         RegisterRequest request = new RegisterRequest("newuser", "pass123", "new@mail.com");
-        when(userService.registerUser(any(), any(), any())).thenReturn(10L); // 성공 시 ID 반환
+        when(userService.registerUser(any(), any(), any())).thenReturn(String.valueOf(10L)); // 성공 시 ID 반환
 
         // When & Then
         mockMvc.perform(post(BASE_URL + "/register").with(csrf())
@@ -99,7 +98,7 @@ public class UserControllerTest {
     void authenticate_Success() throws Exception {
         // Given
         LoginRequest request = new LoginRequest("user", "pass");
-        User mockUser = getMockUser(1L);
+        User mockUser = getMockUser(String.valueOf(1L));
         when(userService.authenticate(any(), any())).thenReturn(mockUser);
 
         // When & Then
@@ -135,8 +134,8 @@ public class UserControllerTest {
     @DisplayName("회원 정보 조회 성공 - HTTP 200 OK")
     void getUserProfile_Success() throws Exception {
         // Given
-        Long userId = 5L;
-        User mockUser = getMockUser(userId);
+        String userId = String.valueOf(5L);
+        User mockUser = getMockUser(String.valueOf(userId));
         when(userService.findUserById(userId)).thenReturn(mockUser);
 
         // When & Then
@@ -150,7 +149,7 @@ public class UserControllerTest {
     @DisplayName("회원 정보 조회 실패 - 사용자 없음 - HTTP 404 NOT_FOUND")
     void getUserProfile_Fail_NotFound() throws Exception {
         // Given
-        Long userId = 999L;
+        String userId = String.valueOf(999L);
         when(userService.findUserById(userId))
                 .thenThrow(new NoSuchElementException());
 
@@ -166,7 +165,7 @@ public class UserControllerTest {
     @DisplayName("상태 변경 성공 - HTTP 200 OK")
     void updateStatus_Success() throws Exception {
         // Given
-        Long userId = 1L;
+        String userId = String.valueOf(1L);
         UpdateStatusRequest request = new UpdateStatusRequest("DORMANT");
         doNothing().when(userService).updateUserStatus(eq(userId), eq(UserStatus.DORMANT));
 
@@ -184,7 +183,7 @@ public class UserControllerTest {
     void findByEmail_Success() throws Exception {
         // Given
         String email = "find@email.com";
-        User mockUser = getMockUser(1L);
+        User mockUser = getMockUser(String.valueOf(1L));
         when(userService.findUserByEmail(email)).thenReturn(java.util.Optional.of(mockUser));
 
         // When & Then

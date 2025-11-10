@@ -12,7 +12,7 @@ import java.util.List; // List 임포트 필요
 import java.util.Optional;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, String> {
 
     /**
      * ID/PW 인증을 위해 사용자 ID(username)로 사용자를 조회합니다.

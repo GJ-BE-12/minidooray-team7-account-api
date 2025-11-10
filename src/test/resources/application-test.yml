@@ -1,0 +1,31 @@
+# src/test/resources/application-test.yml
+
+# 1. Spring Profile 설정: test 프로파일이 활성화될 때 이 파일을 로드합니다.
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  # 2. DataSource 설정: H2 인메모리 DB 사용
+  datasource:
+    # 테스트 환경에서는 MySQL 대신 빠르고 독립적인 H2 인메모리 DB를 사용합니다.
+    url: jdbc:h2:mem:testdb;MODE=MySQL;
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  # 3. JPA 설정: H2 DB에 맞게 설정
+  jpa:
+    hibernate:
+      # 테스트마다 테이블을 새로 생성 (성능과 독립성 확보)
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        # MySQL 호환성을 위해 dialect를 지정합니다.
+        dialect: org.hibernate.dialect.H2Dialect
+
+# 4. 서버 포트 설정 (선택): 테스트에서는 포트가 중요하지 않지만 명시 가능
+server:
+  port: 8081 # 운영 환경과 동일하게 유지해도 무방

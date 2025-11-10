@@ -3,6 +3,7 @@ package com.project.accountapi;
 import com.project.accountapi.domain.User;
 import com.project.accountapi.domain.UserStatus;
 import com.project.accountapi.repository.UserRepository;
+import com.project.accountapi.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,12 +14,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import com.project.accountapi.service.UserService;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -43,9 +45,9 @@ public class UserServiceTest {
         ReflectionTestUtils.setField(userService, "passwordEncoder", passwordEncoder);
     }
 
-    private User createTestUser(Long userId, String username, String email) {
+    private User createTestUser(String userId, String username, String email) {
         return User.builder()
-                .userId(userId)
+                .userId(userId) // String 타입 사용
                 .username(username)
                 .password(passwordEncoder.encode("testpassword"))
                 .email(email)
@@ -61,19 +63,22 @@ public class UserServiceTest {
         // Given
         String username = "testuser";
         String email = "test@example.com";
+        String mockUserId = "UUID-001"; // String ID 사용
+
         when(userRepository.existsByUsername(username)).thenReturn(false);
         when(userRepository.existsByEmail(email)).thenReturn(false);
 
         // Mock save 시 반환할 User 객체 설정
-        User savedUser = createTestUser(1L, username, email);
+        User savedUser = createTestUser(mockUserId, username, email);
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
         // When
-        Long userId = userService.registerUser(username, "password123", email);
+        // UserService의 registerUser 반환 타입이 String으로 변경되었다고 가정
+        String userId = userService.registerUser(username, "password123", email);
 
         // Then
         assertNotNull(userId);
-        assertEquals(1L, userId);
+        assertEquals(mockUserId, userId); // String ID 검증
         verify(userRepository).save(any(User.class)); // save 호출 확인
     }
 
@@ -98,7 +103,7 @@ public class UserServiceTest {
         // Given
         String username = "authuser";
         String rawPassword = "validpassword";
-        User user = createTestUser(2L, username, "auth@example.com");
+        User user = createTestUser("UUID-002", username, "auth@example.com"); // String ID 사용
         // 테스트를 위해 평문 비밀번호를 암호화하여 User 객체에 설정
         ReflectionTestUtils.setField(user, "password", passwordEncoder.encode(rawPassword));
 
@@ -118,7 +123,7 @@ public class UserServiceTest {
         // Given
         String username = "authuser";
         String rawPassword = "wrongpassword";
-        User user = createTestUser(2L, username, "auth@example.com");
+        User user = createTestUser("UUID-002", username, "auth@example.com"); // String ID 사용
         ReflectionTestUtils.setField(user, "password", passwordEncoder.encode("correctpassword"));
 
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
@@ -135,8 +140,9 @@ public class UserServiceTest {
     @DisplayName("회원 상태 변경 성공 - 휴면 처리")
     void updateUserStatus_Success() {
         // Given
-        Long userId = 3L;
+        String userId = "UUID-003"; // String ID 사용
         User user = createTestUser(userId, "statususer", "status@example.com");
+        // UserRepository의 findById 인자가 String으로 변경되었다고 가정
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         // When
@@ -145,9 +151,7 @@ public class UserServiceTest {
         // Then
         assertEquals(UserStatus.DORMANT, user.getStatus());
         verify(userRepository).findById(userId);
-        // @Transactional에 의해 save는 묵시적으로 처리됨
     }
-
 
     // --- 4. 휴면 해제(Reactivation) 테스트 ---
 
@@ -157,7 +161,7 @@ public class UserServiceTest {
         // Given
         String username = "dormantuser";
         String rawPassword = "validpassword";
-        User user = createTestUser(3L, username, "dormant@example.com");
+        User user = createTestUser("UUID-004", username, "dormant@example.com"); // String ID 사용
 
         // 1. User 객체를 DORMANT 상태로 변경
         user.updateStatus(UserStatus.DORMANT);
@@ -187,7 +191,7 @@ public class UserServiceTest {
         // Given
         String username = "withdrawnuser";
         String rawPassword = "validpassword";
-        User user = createTestUser(4L, username, "withdrawn@example.com");
+        User user = createTestUser("UUID-005", username, "withdrawn@example.com"); // String ID 사용
         user.updateStatus(UserStatus.WITHDRAWN); // 탈퇴 상태로 변경
 
         ReflectionTestUtils.setField(user, "password", passwordEncoder.encode(rawPassword));
@@ -200,7 +204,7 @@ public class UserServiceTest {
         }, "탈퇴한 계정은 접근 시도 시 예외가 발생해야 합니다.");
     }
 
-// --- 5. 자동 휴면 대상 조회 테스트 (Scheduler 로직) ---
+    // --- 5. 자동 휴면 대상 조회 테스트 (Scheduler 로직) ---
 
     @Test
     @DisplayName("휴면 대상 조회 성공")
@@ -209,32 +213,32 @@ public class UserServiceTest {
         java.time.LocalDateTime threshold = java.time.LocalDateTime.now().minusYears(1);
 
         // 1. Mock 데이터 생성: 2명의 휴면 대상 (REGISTERED 상태)
-        User target1 = createTestUser(5L, "olduser1", "old1@test.com");
-        User target2 = createTestUser(6L, "olduser2", "old2@test.com");
+        User target1 = createTestUser("UUID-006", "olduser1", "old1@test.com"); // String ID 사용
+        User target2 = createTestUser("UUID-007", "olduser2", "old2@test.com"); // String ID 사용
 
-        java.util.List<User> mockTargets = java.util.List.of(target1, target2);
+        List<User> mockTargets = List.of(target1, target2);
 
         // 2. Repository가 쿼리 조건에 맞는 데이터를 반환하도록 Mocking
         when(userRepository.findByLastLoginAtBeforeAndStatus(any(java.time.LocalDateTime.class), any(UserStatus.class)))
                 .thenReturn(mockTargets);
 
         // When
-        java.util.List<User> targets = userService.findDormancyTargets(threshold, UserStatus.REGISTERED);
+        List<User> targets = userService.findDormancyTargets(threshold, UserStatus.REGISTERED);
 
         // Then
         // 쿼리 메서드가 올바른 인자(threshold, REGISTERED)로 호출되었는지 확인
-        verify(userRepository).findByLastLoginAtBeforeAndStatus(any(java.time.LocalDateTime.class), any(UserStatus.class));
+        verify(userRepository).findByLastLoginAtBeforeAndStatus(any(java.time.LocalDateTime.class), eq(UserStatus.REGISTERED));
         // 반환된 리스트의 크기가 예상과 일치하는지 확인
         assertEquals(2, targets.size());
     }
 
-// --- 6. 강제 휴면 전환 (Scheduler) 테스트 ---
+    // --- 6. 강제 휴면 전환 (Scheduler) 테스트 ---
 
     @Test
     @DisplayName("휴면 전환 성공 - REGISTERED -> DORMANT")
     void convertToDormant_Success() {
         // Given
-        User user = createTestUser(7L, "toDormant", "toDormant@test.com");
+        User user = createTestUser("UUID-008", "toDormant", "toDormant@test.com"); // String ID 사용
 
         // When
         userService.convertToDormant(user);
@@ -247,7 +251,7 @@ public class UserServiceTest {
     @DisplayName("휴면 전환 시도 실패 - 이미 WITHDRAWN 상태인 경우")
     void convertToDormant_Fail_AlreadyWithdrawn() {
         // Given
-        User user = createTestUser(8L, "alreadyWithdrawn", "withdrawn@test.com");
+        User user = createTestUser("UUID-009", "alreadyWithdrawn", "withdrawn@test.com"); // String ID 사용
         user.updateStatus(UserStatus.WITHDRAWN); // 이미 탈퇴 상태
 
         // When
@@ -258,5 +262,3 @@ public class UserServiceTest {
         assertEquals(UserStatus.WITHDRAWN, user.getStatus());
     }
 }
-
-
