@@ -8,12 +8,13 @@ import com.project.accountapi.dto.UpdateStatusRequest;
 import com.project.accountapi.dto.UserResponse;
 import com.project.accountapi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -64,6 +65,8 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public User login(LoginRequest loginRequest) {
+        log.info("🔐 로그인 시도: username={}, password={}", loginRequest.getUsername(), loginRequest.getPassword());
+
         User user = userRepository.findByUsername(loginRequest.getUsername())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
