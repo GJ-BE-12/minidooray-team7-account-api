@@ -39,6 +39,8 @@ public class User {
     @UpdateTimestamp
     private LocalDateTime updatedAt; // DDL에 없지만, 관례적으로 추가
 
+    private LocalDateTime lastLoginAt; // 마지막 로그인 시간(휴먼 처리의 기준)
+
     // 비밀번호 업데이트 메소드 (비즈니스 로직에 필요)
     public void updatePassword(String newPassword) {
         this.password = newPassword;
@@ -47,5 +49,27 @@ public class User {
     // 상태 업데이트 메소드 (비즈니스 로직에 필요)
     public void updateStatus(UserStatus newStatus) {
         this.status = newStatus;
+    }
+
+    /**
+     * 사용자가 휴면 상태인지 확인합니다.
+     */
+    public boolean isDormant() {
+        return this.status == UserStatus.DORMANT;
+    }
+
+    /**
+     * 로그인 성공 시 마지막 로그인 시간을 갱신합니다.
+     */
+    public void updateLastLoginAt() {
+        this.lastLoginAt = LocalDateTime.now();
+    }
+
+    /**
+     * 휴면 계정을 정상(REGISTERED) 상태로 해제하고 로그인 시간을 갱신합니다.
+     */
+    public void reactivate() {
+        this.status = UserStatus.REGISTERED;
+        this.lastLoginAt = LocalDateTime.now();
     }
 }

@@ -8,6 +8,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -27,11 +29,7 @@ public class UserService {
 
     /**
      * 1. 회원 가입 (ID/Email 중복 체크 포함)
-     * @param username 계정 ID
-     * @param password 비밀번호 (암호화 필요)
-     * @param email 이메일
-     * @return 저장된 User의 ID
-     * @throws IllegalArgumentException 중복된 ID 또는 이메일이 존재할 경우 발생
+
      */
     @Transactional
     public Long registerUser(String username, String password, String email) {
@@ -58,22 +56,34 @@ public class UserService {
     }
 
     /**
-     * 2. ID/PW 인증 (Gateway에서 호출)
-     * @param username 계정 ID
-     * @param rawPassword 평문 비밀번호
-     * @return 인증에 성공한 User 엔티티
-     * @throws NoSuchElementException 사용자가 없거나, 비밀번호가 일치하지 않을 경우 발생
+     * 2. ID/PW 인증 및 상태 확인 로직 (Gateway에서 호출)
+     * 휴면 상태일 경우, 로그인 시 자동으로 정상 상태로 해제합니다.
      */
+    @Transactional // 상태 변경 로직이 있으므로 트랜잭션 필요
     public User authenticate(String username, String rawPassword) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new NoSuchElementException("사용자 ID를 찾을 수 없습니다."));
 
-        // 비밀번호 일치 여부 확인
+        // 1. 비밀번호 일치 여부 확인
         if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
             throw new NoSuchElementException("비밀번호가 일치하지 않습니다.");
         }
 
-        // 추가: 계정 상태가 활성(REGISTERED)인지 확인하는 로직 필요
+        // 2. 탈퇴 계정 확인
+        if (user.getStatus() == UserStatus.WITHDRAWN) {
+            throw new IllegalStateException("이미 탈퇴한 계정입니다.");
+        }
+
+        // 3. 🔥 핵심: 휴면 계정 확인 및 해제 (DORMANT -> REGISTERED)
+        if (user.isDormant()) {
+            user.reactivate(); // 휴면 해제 및 lastLoginAt 갱신
+            System.out.println("✅ 휴면 계정 (" + username + ")이 성공적으로 해제되었습니다.");
+        }
+
+        // 4. 정상 계정인 경우, 마지막 로그인 시간만 갱신 (휴면 체크를 위한 데이터)
+        else {
+            user.updateLastLoginAt();
+        }
 
         return user;
     }
@@ -89,9 +99,6 @@ public class UserService {
 
     /**
      * 4. 회원 정보 조회 (Gateway/Task-Api에서 참조)
-     * @param userId 사용자 PK
-     * @return User 엔티티
-     * @throws NoSuchElementException 해당 ID의 사용자가 없을 경우 발생
      */
     public User findUserById(Long userId) {
         return userRepository.findById(userId)
@@ -100,13 +107,34 @@ public class UserService {
 
     /**
      * 5. 회원 상태 변경 (휴면/탈퇴)
-     * @param userId 사용자 PK
-     * @param newStatus 변경할 상태 (휴면 또는 탈퇴)
      */
     @Transactional
     public void updateUserStatus(Long userId, UserStatus newStatus) {
         User user = findUserById(userId);
         user.updateStatus(newStatus);
         // userRepository.save(user); // @Transactional 덕분에 자동 저장됨
+    }
+
+    /**
+     * 🔥 [추가] 자동 휴면 처리를 위한 메서드 (DormancyScheduler에서 호출)
+     * @param user 휴면 처리할 User 엔티티
+     */
+    @Transactional
+    public void convertToDormant(User user) {
+        // 이미 휴면 상태(DORMANT) 또는 탈퇴 상태(WITHDRAWN)가 아닌지 확인 후 진행
+        if (user.getStatus() == UserStatus.REGISTERED) {
+            user.updateStatus(UserStatus.DORMANT);
+            // @Transactional 덕분에 별도의 save() 없이도 DB에 반영됩니다.
+        } else {
+            // 이미 휴면 상태이거나 탈퇴 상태인 경우, 로그를 남기거나 예외 처리를 할 수 있습니다.
+            System.out.println("경고: 이미 DORMANT 또는 WITHDRAWN 상태인 사용자 ID: " + user.getUserId() + "에 대해 휴면 전환 시도가 있었습니다.");
+        }
+    }
+
+    /**
+     * 🔥 [추가] 자동 휴면 처리를 위해, 특정 시간 이전에 로그인했고, 상태가 REGISTERED인 사용자 목록 조회
+     */
+    public List<User> findDormancyTargets(LocalDateTime thresholdDate, UserStatus status) {
+        return userRepository.findByLastLoginAtBeforeAndStatus(thresholdDate, status);
     }
 }
