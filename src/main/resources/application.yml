@@ -7,7 +7,7 @@ spring:
 
   datasource:
 # MySQL ?? URL (DB ??, ???, ??? ??)
-    url: jdbc:mysql://220.67.216.14:13306/nhn_academy_6?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    url: jdbc:mysql://10.116.64.14:13306/nhn_academy_6?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
 # MySQL ?? ??
     username: nhn_academy_6
 # MySQL ?? ????

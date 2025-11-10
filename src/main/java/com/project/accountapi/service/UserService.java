@@ -2,15 +2,18 @@ package com.project.accountapi.service;
 
 import com.project.accountapi.domain.User;
 import com.project.accountapi.domain.UserStatus;
+import com.project.accountapi.dto.LoginRequest;
 import com.project.accountapi.dto.RegisterRequest;
 import com.project.accountapi.dto.UpdateStatusRequest;
 import com.project.accountapi.dto.UserRequest;
+import com.project.accountapi.dto.UserResponse;
 import com.project.accountapi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -60,5 +63,13 @@ public class UserService {
         if(!exist(userId))
             throw new IllegalArgumentException("존재하지 않는 사용자 ID입니다.");
         userRepository.deleteUserByUserId(userId);
+    }
+
+    public UserResponse login(LoginRequest request) {
+        User user = userRepository.findUserByUserId(request.getUserId());
+        if (user == null || !Objects.equals(user.getPassword(), request.getPassword())) {
+            throw new IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다.");
+        }
+        return UserResponse.from(user);
     }
 }

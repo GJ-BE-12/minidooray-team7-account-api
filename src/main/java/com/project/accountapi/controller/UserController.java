@@ -2,10 +2,7 @@ package com.project.accountapi.controller;
 
 import com.project.accountapi.domain.User;
 import com.project.accountapi.domain.UserStatus;
-import com.project.accountapi.dto.UserRequest;
-import com.project.accountapi.dto.RegisterRequest;
-import com.project.accountapi.dto.UpdateStatusRequest;
-import com.project.accountapi.dto.UserResponse;
+import com.project.accountapi.dto.*;
 import com.project.accountapi.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -62,6 +59,16 @@ public class UserController {
             return ResponseEntity.ok().build();
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<UserResponse> login(@RequestBody LoginRequest request) {
+        try {
+            UserResponse userResponse = userService.login(request);
+            return ResponseEntity.ok(userResponse);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
 }
