@@ -22,7 +22,7 @@ public class UserResponse {
                 .userId(user.getUserId())
                 .username(user.getUsername())
                 .email(user.getEmail())
-                .status(user.ge tStatus().name())
+                .status(user.getStatus().name())
                 .build();
     }
 }
